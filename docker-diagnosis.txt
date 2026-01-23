@@ -1,0 +1,15 @@
+=== Docker Container Status ===
+Name   Command   State   Ports
+------------------------------
+
+=== App Container Logs (last 50 lines) ===
+Attaching to 
+
+=== Database Container Logs (last 20 lines) ===
+Attaching to 
+
+=== Debug Log File ===
+Debug log file not found at .cursor/debug.log
+
+=== Container File Check (if container is running) ===
+App container is not running

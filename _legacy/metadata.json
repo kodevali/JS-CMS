@@ -1,0 +1,7 @@
+{
+  "name": "JS Bank CMS",
+  "description": "A high-security, internal content management system for corporate news across HR, IT, and Communications departments, featuring AI-assisted drafting and file management for JS Bank.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
