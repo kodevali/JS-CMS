@@ -67,6 +67,9 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
+# Default DATABASE_URL so the app starts without any env (works with docker-compose postgres)
+ENV DATABASE_URL="postgresql://jscms:changeme123@postgres:5432/jscms?schema=public"
+
 # Use a startup script to handle migrations
 COPY --chown=nextjs:nodejs docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh

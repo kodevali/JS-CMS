@@ -2,6 +2,8 @@
 
 This guide will help you deploy JS-CMS using Docker and Docker Compose. This is perfect for self-hosting on your own server, VPS, or cloud instance.
 
+**VM / zero config:** If someone else set this up and you only need to run it on a VM, use **[RUN-FOR-VM.md](RUN-FOR-VM.md)**. No `.env` or configuration required—just run `./deploy-vm.sh` or `docker compose up -d`.
+
 ## 🎯 Overview
 
 The Docker setup includes:
@@ -40,9 +42,11 @@ docker compose version
 
 ## 🚀 Quick Start
 
-### 1. Prepare Environment Variables
+**.env is optional.** The app and database start with built-in defaults. Create a `.env` only if you want to change the DB password, JWT secret, or add Google sign-in.
 
-Create a `.env` file in the project root:
+### 1. (Optional) Prepare Environment Variables
+
+Create a `.env` file in the project root only if you want to customize:
 
 ```bash
 cd /home/kodevali/JSCMS/JS-CMS
@@ -52,7 +56,11 @@ cp .env.example .env
 Edit `.env` and set:
 
 ```env
-# Database password (change this!)
+# Required when running the app container (docker-compose sets this from DB_*)
+# Format: postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public
+DATABASE_URL=postgresql://jscms:your-password@postgres:5432/jscms?schema=public
+
+# Database password (change this!) — used by docker-compose to build DATABASE_URL
 DB_PASSWORD=your-secure-password-here
 
 # JWT Secret (generate with: openssl rand -base64 32)
@@ -97,6 +105,31 @@ docker compose ps
 ```
 
 The application will be available at: **http://localhost:3000**
+
+### Running the image without Docker Compose (e.g. on a VM with external Postgres)
+
+If you run only the app container (e.g. `docker run ...` or a VM/orchestrator that does not use docker-compose), you **must** pass `DATABASE_URL` at runtime. The image does not include a database; it expects a PostgreSQL connection string.
+
+**Example:**
+
+```bash
+docker run -d -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:password@dbhost:5432/jscms?schema=public" \
+  -e JWT_SECRET="your-jwt-secret" \
+  -e GOOGLE_CLIENT_ID="..." \
+  -e GOOGLE_CLIENT_SECRET="..." \
+  -e GOOGLE_REDIRECT_URI="https://your-domain.com/api/auth/callback/google" \
+  your-image-name
+```
+
+Or use an env file:
+
+```bash
+# .env must contain at least DATABASE_URL (and JWT_SECRET, Google OAuth vars as needed)
+docker run -d -p 3000:3000 --env-file .env your-image-name
+```
+
+If `DATABASE_URL` is missing, the container will exit immediately with a clear error instead of retrying.
 
 ## 📝 Detailed Steps
 
@@ -315,6 +348,21 @@ cat backup-*.sql | docker compose exec -T postgres psql -U jscms -d jscms
 
 ## 🐛 Troubleshooting
 
+### "Environment variable not found: DATABASE_URL"
+
+You see this when the app container is run **without** setting `DATABASE_URL` (e.g. plain `docker run` with no `-e` or `--env-file`).
+
+**Fix:** Pass the database URL when starting the container:
+
+- **With docker-compose:** Use the project's `docker-compose.yml`; it sets `DATABASE_URL` from `DB_PASSWORD` and the postgres service.
+- **Without docker-compose:** Set `DATABASE_URL` when running:
+  ```bash
+  docker run -e DATABASE_URL="postgresql://user:password@host:5432/dbname?schema=public" ...
+  ```
+  Or use an env file: `docker run --env-file .env ...` (ensure `.env` contains `DATABASE_URL`).
+
+See **Running the image without Docker Compose** above for a full example.
+
 ### Application Won't Start
 
 ```bash
@@ -322,6 +370,7 @@ cat backup-*.sql | docker compose exec -T postgres psql -U jscms -d jscms
 docker compose logs app
 
 # Common issues:
+# - DATABASE_URL not set: See "Environment variable not found: DATABASE_URL" above
 # - Database not ready: Wait a few seconds and restart
 # - Migration errors: Check database connection
 # - Port already in use: Change port in docker-compose.yml
